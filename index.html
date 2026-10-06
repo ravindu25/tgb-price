@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fdd6e1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#160c11" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TGB Price">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<title>TGB Price Formatter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: phone-first single column. Price input on top, three tappable payment rows, message preview, copy button pinned to the bottom of the screen. */
+  /* Palette from the tgb. logo: blush ground #fdd6e1, hot pink #ed3a7b, ink dot #121012 */
+  :root {
+    --bg: #fff4f7;
+    --glow-a: #fdd6e1;
+    --glow-b: #ffe6ee;
+    --surface: #ffffff;
+    --surface-2: #fdeaf0;
+    --line: #f7d4df;
+    --fg: #121012;
+    --muted: #8a6b77;
+    --accent: #ed3a7b;
+    --accent-ink: #ffffff;
+    --focus: #121012;
+    --ok: #138a5b;
+    --shadow: 0 1px 2px rgba(120, 20, 60, .06), 0 16px 40px -20px rgba(237, 58, 123, .28);
+    --btn-shadow: 0 10px 24px -8px rgba(237, 58, 123, .55);
+    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #160c11; --glow-a: #4a1530; --glow-b: #2a0f1d; --surface: #21131a; --surface-2: #2c1a23;
+      --line: #40262f; --fg: #fdeef3; --muted: #c19fae; --accent: #ff5c95; --accent-ink: #1a0710;
+      --focus: #fdd6e1; --ok: #4fd69c;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -20px rgba(0,0,0,.7);
+      --btn-shadow: 0 10px 24px -8px rgba(0,0,0,.7);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #160c11; --glow-a: #4a1530; --glow-b: #2a0f1d; --surface: #21131a; --surface-2: #2c1a23;
+    --line: #40262f; --fg: #fdeef3; --muted: #c19fae; --accent: #ff5c95; --accent-ink: #1a0710;
+    --focus: #fdd6e1; --ok: #4fd69c;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 16px 40px -20px rgba(0,0,0,.7);
+    --btn-shadow: 0 10px 24px -8px rgba(0,0,0,.7);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(30rem 22rem at 0% 0%, var(--glow-a), transparent 65%),
+      radial-gradient(28rem 22rem at 100% 70%, var(--glow-b), transparent 65%),
+      var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.45;
+    padding-inline: 16px;
+    padding-block: calc(20px + env(safe-area-inset-top, 0px)) 96px; /* room for the floating copy button */
+  }
+
+  .app { width: 100%; max-width: 30rem; margin-inline: auto; display: grid; gap: 16px; }
+
+  header { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 44px; height: 44px; border-radius: 13px; flex: none; display: block; box-shadow: 0 0 0 1px var(--line); }
+  h1 { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: 1.375rem; letter-spacing: -.01em; }
+
+  .label {
+    display: block; font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 8px 4px;
+  }
+
+  /* Price input */
+  .price-input {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 20px;
+    padding: 10px 8px 10px 18px;
+    box-shadow: var(--shadow);
+    transition: border-color .15s;
+  }
+  .price-input:focus-within { border-color: var(--accent); }
+  .price-input .cur { font-weight: 700; color: var(--muted); font-size: 1.125rem; }
+  .price-input input {
+    flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--fg);
+    font-family: var(--font-display); font-weight: 700; font-size: 2.25rem; letter-spacing: -.01em;
+    font-variant-numeric: tabular-nums; padding: 4px 0;
+  }
+  .price-input input::placeholder { color: var(--line); }
+  .clear {
+    flex: none; width: 44px; height: 44px; border: 0; border-radius: 14px;
+    background: var(--surface-2); color: var(--muted);
+    display: grid; place-items: center;
+  }
+  .clear svg { width: 18px; height: 18px; }
+  .hint { margin: 8px 4px 0; font-size: .8125rem; color: var(--accent); font-weight: 600; }
+
+  /* Payment rows: the whole row is a button that copies that one line */
+  .rows { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+  .row {
+    width: 100%; min-height: 64px;
+    display: grid; grid-template-columns: 1fr auto 24px; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: 18px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+    text-align: left;
+    transition: border-color .15s, transform .1s;
+  }
+  .row:active:not(:disabled) { transform: scale(.985); }
+  .row:disabled { cursor: default; }
+  .row .meta { min-width: 0; }
+  .row .name { display: block; font-weight: 700; font-size: .9375rem; }
+  .row .desc { display: block; font-size: .75rem; color: var(--muted); }
+  .row .amt { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .row .amt small { font-family: var(--font-body); font-weight: 600; font-size: .75rem; color: var(--muted); margin-right: 3px; }
+  .row .ic { color: var(--muted); display: grid; place-items: center; }
+  .row .ic svg { width: 18px; height: 18px; }
+  .row.done { border-color: var(--ok); }
+  .row.done .ic { color: var(--ok); }
+
+  .preview {
+    margin: 0; padding: 14px 16px; border-radius: 16px; background: var(--surface-2);
+    font: 500 .8125rem/1.6 var(--font-body); color: var(--muted);
+    white-space: pre-wrap; word-break: break-word;
+    user-select: text; -webkit-user-select: text;
+  }
+
+  /* Floating copy pill, thumb-reachable */
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    display: flex; justify-content: center; pointer-events: none;
+  }
+  .copy-all {
+    pointer-events: auto;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 48px; padding: 0 22px;
+    border: 0; border-radius: 999px;
+    background: var(--accent); color: var(--accent-ink);
+    box-shadow: var(--btn-shadow);
+    font-weight: 700; font-size: .9375rem;
+    transition: transform .1s, background .2s;
+  }
+  .copy-all:active:not(:disabled) { transform: scale(.98); }
+  .copy-all.done { background: var(--ok); }
+  .copy-all:disabled { opacity: .45; cursor: default; }
+  .copy-all svg { width: 18px; height: 18px; }
+
+  button { font: inherit; cursor: pointer; touch-action: manipulation; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  @media (hover: hover) {
+    .row:hover:not(:disabled) { border-color: var(--accent); }
+    .row:hover:not(:disabled) .ic { color: var(--accent); }
+    .copy-all:hover:not(:disabled) { filter: brightness(1.08); }
+  }
+  @media (min-width: 600px) {
+    body { padding-block: 48px 110px; }
+    h1 { font-size: 1.5rem; }
+    .logo { width: 52px; height: 52px; border-radius: 15px; }
+    .price-input input { font-size: 2.75rem; }
+  }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<main class="app">
+  <header>
+    <img class="logo" alt="tgb." width="44" height="44" src="data:image/webp;base64,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">
+    <h1>Price Formatter</h1>
+  </header>
+
+  <div>
+    <label class="label" for="itemPrice">Item price</label>
+    <div class="price-input">
+      <span class="cur">Rs.</span>
+      <input id="itemPrice" type="text" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="0" value="12500">
+      <button class="clear" id="clear" type="button" aria-label="Clear price">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <p class="hint" id="hint" hidden>Enter numbers only, like 12500.</p>
+  </div>
+
+  <div>
+    <span class="label">Tap a price to copy just that line</span>
+    <div class="rows">
+      <button class="row" type="button" data-copy="direct">
+        <span class="meta"><span class="name">Direct deposit</span><span class="desc">Bank transfer</span></span>
+        <span class="amt"><small>Rs.</small><span id="directPrice">–</span></span>
+        <span class="ic"></span>
+      </button>
+      <button class="row" type="button" data-copy="card">
+        <span class="meta"><span class="name">Card payment</span><span class="desc">Visa / Mastercard</span></span>
+        <span class="amt"><small>Rs.</small><span id="cardPrice">–</span></span>
+        <span class="ic"></span>
+      </button>
+      <button class="row" type="button" data-copy="koko">
+        <span class="meta"><span class="name">Koko</span><span class="desc">Pay in 3 installments</span></span>
+        <span class="amt"><small>Rs.</small><span id="kokoPrice">–</span></span>
+        <span class="ic"></span>
+      </button>
+    </div>
+  </div>
+
+  <div>
+    <span class="label">Message to send</span>
+    <pre class="preview" id="preview"></pre>
+  </div>
+</main>
+
+<div class="bar">
+  <button class="copy-all" id="copyAll" type="button"></button>
+</div>
+
+<textarea id="fallback" aria-hidden="true" tabindex="-1" readonly style="position:fixed;left:-9999px;top:0;opacity:0"></textarea>
+
+<script>
+  const ICON_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  const $ = (id) => document.getElementById(id);
+  const input = $('itemPrice');
+  const hint = $('hint');
+  const copyAllBtn = $('copyAll');
+
+  const LABELS = {
+    direct: 'Direct Deposit/Transfer Price - Rs. ',
+    card: 'Card Payment Price - Rs. ',
+    koko: 'Koko Payment Price - Rs. ',
+  };
+  let prices = null;
+
+  function setCopyAllLabel(state) {
+    const text = { idle: 'Copy message', done: 'Copied', fail: 'Long-press the message to copy' }[state];
+    copyAllBtn.innerHTML = (state === 'done' ? ICON_CHECK : ICON_COPY) + text;
+    copyAllBtn.classList.toggle('done', state === 'done');
+  }
+
+  function calculate(raw) {
+    const cleaned = raw.replace(/[,\s]/g, '').replace(/^rs\.?/i, '');
+    if (cleaned === '') return { empty: true };
+    const n = Number(cleaned);
+    if (!isFinite(n) || n <= 0) return { error: true };
+    return {
+      direct: Math.round(n),
+      card: Math.round(n / 0.97),
+      koko: Math.round(n / 0.88),
+    };
+  }
+
+  function message(p) {
+    return LABELS.direct + p.direct + '\n' + LABELS.card + p.card + '\n' + LABELS.koko + p.koko;
+  }
+
+  function render() {
+    const r = calculate(input.value);
+    const ok = !r.empty && !r.error;
+    prices = ok ? r : null;
+    ['direct', 'card', 'koko'].forEach((k) => {
+      $(k + 'Price').textContent = ok ? r[k].toLocaleString('en-US') : '–';
+    });
+    document.querySelectorAll('[data-copy]').forEach((b) => (b.disabled = !ok));
+    copyAllBtn.disabled = !ok;
+    $('preview').textContent = ok ? message(r) : 'Enter a price to see the message.';
+    hint.hidden = !r.error;
+    try { localStorage.setItem('tgb-last-price', input.value); } catch (e) {}
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      const ta = $('fallback');
+      ta.value = text;
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      try { return document.execCommand('copy'); } catch (e2) { return false; }
+    }
+  }
+
+  function buzz() { try { navigator.vibrate && navigator.vibrate(15); } catch (e) {} }
+
+  async function copyAll() {
+    if (!prices) return;
+    input.blur(); // close the phone keyboard
+    const ok = await copyText(message(prices));
+    setCopyAllLabel(ok ? 'done' : 'fail');
+    if (ok) buzz();
+    clearTimeout(copyAllBtn._t);
+    copyAllBtn._t = setTimeout(() => setCopyAllLabel('idle'), 1800);
+  }
+
+  document.querySelectorAll('[data-copy]').forEach((row) => {
+    const ic = row.querySelector('.ic');
+    ic.innerHTML = ICON_COPY;
+    row.addEventListener('click', async () => {
+      if (!prices) return;
+      const k = row.dataset.copy;
+      if (!(await copyText(LABELS[k] + prices[k]))) return;
+      buzz();
+      ic.innerHTML = ICON_CHECK;
+      row.classList.add('done');
+      clearTimeout(row._t);
+      row._t = setTimeout(() => { ic.innerHTML = ICON_COPY; row.classList.remove('done'); }, 1400);
+    });
+  });
+
+  $('clear').addEventListener('click', () => { input.value = ''; render(); input.focus(); });
+  copyAllBtn.addEventListener('click', copyAll);
+  input.addEventListener('input', render);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); copyAll(); } });
+  input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+
+  try {
+    const last = localStorage.getItem('tgb-last-price');
+    if (last) input.value = last;
+  } catch (e) {}
+  setCopyAllLabel('idle');
+  render();
+</script>
+
+</body>
+</html>
